@@ -26,7 +26,8 @@ const launchBrowser = async (userId) => {
       '--disable-features=IsolateOrigins,site-per-process',
       '--disable-blink-features=AutomationControlled'
     ],
-    userDataDir: userSessionPath
+    userDataDir: userSessionPath,
+    executablePath: puppeteer.executablePath()
   });
 
   const page = await browser.newPage();
