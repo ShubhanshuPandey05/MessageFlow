@@ -3,6 +3,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const fs = require('fs');
 const path = require('path');
 const qrcode = require('qrcode-terminal');
+const { executablePath } = require('puppeteer');
 
 // Add stealth plugin to bypass some detection mechanisms
 puppeteer.use(StealthPlugin());
@@ -27,7 +28,7 @@ const launchBrowser = async (userId) => {
       '--disable-blink-features=AutomationControlled'
     ],
     userDataDir: userSessionPath,
-    executablePath: puppeteer.executablePath()
+    executablePath: executablePath()
   });
 
   const page = await browser.newPage();
