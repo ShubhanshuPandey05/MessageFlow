@@ -1,12 +1,13 @@
-const puppeteer = require('puppeteer-extra');
+const puppeteerx = require('puppeteer-extra');
+const puppeteer = require('puppeteer'); 
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const fs = require('fs');
 const path = require('path');
 const qrcode = require('qrcode-terminal');
-const { executablePath } = require('puppeteer');
+const { executablePath } = puppeteer;
 
 // Add stealth plugin to bypass some detection mechanisms
-puppeteer.use(StealthPlugin());
+puppeteerx.use(StealthPlugin());
 
 const SESSION_PATH = path.join(__dirname, '../sessions');
 
@@ -20,7 +21,7 @@ const launchBrowser = async (userId) => {
   console.log('User session dir:', userSessionPath);
 
 
-  const browser = await puppeteer.launch({
+  const browser = await puppeteerx.launch({
     headless: true,
     defaultViewport: null,
     args: [
