@@ -16,12 +16,15 @@ const launchBrowser = async (userId) => {
   if (!fs.existsSync(userSessionPath)) {
     fs.mkdirSync(userSessionPath, { recursive: true });
   }
+  console.log('Chrome executablePath:', executablePath());
+  console.log('User session dir:', userSessionPath);
+
 
   const browser = await puppeteer.launch({
     headless: true,
     defaultViewport: null,
     args: [
-      '--no-sandbox', 
+      '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
@@ -60,9 +63,9 @@ const launchBrowser = async (userId) => {
         const qrCodeElement = document.querySelector(selector);
         if (qrCodeElement) {
           // If using a canvas, try to get data-ref
-          const dataRef = qrCodeElement.getAttribute('data-ref') || 
-                          qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
-          
+          const dataRef = qrCodeElement.getAttribute('data-ref') ||
+            qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
+
           return {
             needsQRCode: true,
             qrCodeFound: true,
@@ -87,7 +90,7 @@ const launchBrowser = async (userId) => {
     // Handle QR Code scenario
     if (loginStatus.needsQRCode && loginStatus.qrCodeFound) {
       console.log('QR Code Required for Login');
-      
+
       // Generate QR code in terminal
       if (loginStatus.dataRef) {
         console.log('Scan this QR Code with WhatsApp Mobile:');
@@ -99,7 +102,7 @@ const launchBrowser = async (userId) => {
         const qrCode = document.querySelector('[data-testid="qrcode"]');
         const chatList = document.querySelector('[data-testid="chat-list"]');
         return chatList !== null || qrCode === null;
-      }, { 
+      }, {
         timeout: 0  // Wait indefinitely
       });
 
@@ -112,7 +115,7 @@ const launchBrowser = async (userId) => {
 
   } catch (error) {
     console.error('Detailed Login Error:', error);
-    
+
     // Take a screenshot for debugging
     const errorScreenshotPath = path.join(userSessionPath, 'error-screenshot.png');
     await page.screenshot({ path: errorScreenshotPath });
