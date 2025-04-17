@@ -17,8 +17,9 @@ const launchBrowser = async (userId) => {
   if (!fs.existsSync(userSessionPath)) {
     fs.mkdirSync(userSessionPath, { recursive: true });
   }
-  console.log('Chrome executablePath:', executablePath());
-  console.log('User session dir:', userSessionPath);
+  console.log("Launching browser with system Chrome...");
+  const execPath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+  console.log("Using Chrome executable path:", execPath);
 
 
   const browser = await puppeteerx.launch({

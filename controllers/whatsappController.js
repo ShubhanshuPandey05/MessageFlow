@@ -216,10 +216,13 @@ const sendMessage = async (req, res) => {
         : phoneNumber.replace(/\D/g, '');
 
       // Direct navigation to the chat with this phone number
-      const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
-      await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+      console.log("Starting to navigate to the page");
 
-      
+      const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
+      await page.goto(chatUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+      console.log("page lodded succsesfully");
+
       // Step 5: Send the message
       await sendMessageToChat(page, message);
       console.log("Message sent");
@@ -643,11 +646,6 @@ async function dismissPopups(page) {
 // };
 
 
-
-
-
-
-
 const sendFileWithMessage = async (req, res) => {
   // Use middleware to handle file upload
   uploadMiddleware(req, res, async (err) => {
@@ -656,8 +654,6 @@ const sendFileWithMessage = async (req, res) => {
     }
 
     const { userId, phoneNumber, message } = req.body;
-
-    // Log only essential data
     console.log('Processing file send request for:', phoneNumber);
 
     if (!req.file) {
@@ -665,7 +661,6 @@ const sendFileWithMessage = async (req, res) => {
     }
 
     if (!sessions[userId]) {
-      // Clean up the uploaded file if session is not active
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'Session not active' });
     }
@@ -674,104 +669,297 @@ const sendFileWithMessage = async (req, res) => {
 
     try {
       const page = sessions[userId].page;
-
-      // Ensure we have an absolute file path that exists
       filePath = path.resolve(req.file.path);
 
-      // Verify file exists before attempting to upload
       if (!fs.existsSync(filePath)) {
         throw new Error(`File does not exist at path: ${filePath}`);
       }
 
-      // FASTER APPROACH - Use direct navigation to chat instead of search
+      console.log("File exists and session is active");
+
       // Format phone number correctly
       const formattedNumber = phoneNumber.startsWith('+')
         ? phoneNumber.replace(/\D/g, '')
         : phoneNumber.replace(/\D/g, '');
 
-      // Direct navigation to the chat with this phone number
+      // Direct navigation with longer timeout
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
-      await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+      console.log("Navigating to chat URL");
+      await page.goto(chatUrl, { waitUntil: 'networkidle2', timeout: 90000 });
 
-      // Wait for the chat to load
-      // const chatLoadSelector = 'div[data-testid="conversation-panel-wrapper"]';
-      // await page.waitForSelector(chatLoadSelector, { timeout: 20000 });
-
-      // Brief pause to ensure everything is loaded
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Open attachment menu
-      const attachmentSelector = 'button[title="Attach"]';
-      await page.waitForSelector(attachmentSelector, { timeout: 10000 });
-      await page.click(attachmentSelector);
-
-      // Wait for file input and upload file
-      const fileInputSelector = 'input[type="file"]';
-      await page.waitForSelector(fileInputSelector, { timeout: 10000 });
-      const fileInput = await page.$(fileInputSelector);
-
-      if (fileInput) {
-        // Upload file
-        await fileInput.uploadFile(filePath);
-
-        // Dynamic wait based on file size - but faster overall
-        const fileSize = req.file.size;
-        const uploadWaitTime = Math.max(3000, Math.min(5000, fileSize / 50000 * 500));
-        await new Promise(resolve => setTimeout(resolve, uploadWaitTime));
-      } else {
-        throw new Error('File upload input not found');
-      }
-
-      // Add message if provided
-      if (message) {
-        const messageSelector = 'div[contenteditable="true"][role="textbox"][aria-placeholder="Add a caption"]';
-        await page.waitForSelector(messageSelector, { timeout: 10000 });
-        await page.evaluate((selector, text) => {
-          const el = document.querySelector(selector);
-          if (el) {
-            // Focus the element
-            el.focus();
-  
-            // Clear existing content
-            el.innerHTML = '';
-  
-            // Create a "paste" event with the message text
-            const dataTransfer = new DataTransfer();
-            dataTransfer.setData('text/plain', text);
-  
-            const pasteEvent = new ClipboardEvent('paste', {
-              clipboardData: dataTransfer,
-              bubbles: true,
-              cancelable: true
-            });
-  
-            // Dispatch the paste event
-            el.dispatchEvent(pasteEvent);
+      // Wait longer to ensure chat is fully loaded
+      console.log("Waiting for chat to stabilize");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Ensure the page is focused and active
+      await page.bringToFront();
+      
+      // Clear any potential notifications or popups
+      try {
+        const dismissSelectors = [
+          '[role="button"][aria-label="Dismiss"]',
+          '[data-testid="popup-controls-ok"]',
+          '[data-testid="popup-controls-cancel"]'
+        ];
+        
+        for (const selector of dismissSelectors) {
+          const dismissBtn = await page.$(selector);
+          if (dismissBtn) {
+            await dismissBtn.click();
+            console.log("Dismissed a popup");
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
-        }, messageSelector, message);
+        }
+      } catch (popupErr) {
+        // Ignore errors from popup clearing
+      }
+      
+      // Open attachment menu with better error handling
+      console.log("Attempting to open attachment menu");
+      const attachmentSelectors = [
+        'button[aria-label="Attach"]', 
+        'button[title="Attach"]', 
+        'span[data-icon="attach-menu-plus"]',
+        'div[title="Attach"]',
+        '[data-testid="attach"]'
+      ];
+      
+      let attachButtonFound = false;
+      for (const selector of attachmentSelectors) {
+        try {
+          const attachButton = await page.waitForSelector(selector, { timeout: 5000 });
+          if (attachButton) {
+            await attachButton.click();
+            console.log(`Clicked attachment button using selector: ${selector}`);
+            attachButtonFound = true;
+            break;
+          }
+        } catch (attachErr) {
+          console.log(`Selector ${selector} not found or not clickable`);
+        }
+      }
+      
+      if (!attachButtonFound) {
+        throw new Error("Could not find attachment button");
+      }
+      
+      // Wait for attachment menu to appear
+      console.log("Waiting for attachment menu");
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Force file input to be visible and interactable
+      await page.evaluate(() => {
+        const inputs = document.querySelectorAll('input[type="file"]');
+        for (const input of inputs) {
+          input.style.opacity = '1';
+          input.style.display = 'block';
+          input.style.visibility = 'visible';
+          input.style.position = 'fixed';
+          input.style.top = '0';
+          input.style.left = '0';
+          input.style.zIndex = '9999';
+        }
+      });
+      
+      // Find and use file input with expanded timeout
+      console.log("Looking for file input");
+      const fileInputSelector = 'input[type="file"]';
+      await page.waitForSelector(fileInputSelector, { visible: true, timeout: 20000 });
+      
+      // Upload file with extra precautions
+      console.log("Uploading file...");
+      await page.evaluate(() => {
+        // Clear any existing file upload dialogs
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+          input.value = '';
+        });
+      });
+      
+      // Use elementHandle for more reliable upload
+      const fileInput = await page.$(fileInputSelector);
+      if (!fileInput) {
+        throw new Error("File input element not found");
+      }
+      
+      await fileInput.uploadFile(filePath);
+      
+      // Wait longer for file processing based on file size
+      const fileSize = req.file.size;
+      const uploadWaitTime = Math.max(2000, Math.min(5000, fileSize / 30000 * 1000));
+      console.log(`Waiting ${uploadWaitTime}ms for file processing`);
+      await new Promise(resolve => setTimeout(resolve, uploadWaitTime));
+      
+      // Check for errors immediately after upload
+      try {
+        const errorSelectors = [
+          'div[data-testid="alert-container"] span',
+          '[data-testid="popup-contents"] [role="heading"]',
+          '[data-testid="alert"] span'
+        ];
+        
+        for (const selector of errorSelectors) {
+          const errorElement = await page.$(selector);
+          if (errorElement) {
+            const errorText = await page.evaluate(el => el.textContent, errorElement);
+            if (errorText && (
+                errorText.includes("not supported") || 
+                errorText.includes("error") || 
+                errorText.includes("fail") ||
+                errorText.includes("unable")
+            )) {
+              throw new Error(`Upload error: ${errorText}`);
+            }
+          }
+        }
+      } catch (errorCheckErr) {
+        if (errorCheckErr.message.includes("Upload error")) {
+          throw errorCheckErr;
+        }
+        // Otherwise continue - no error found
+      }
+      
+      console.log("File appears to be processed successfully");
+      
+      // Add caption if provided
+      if (message && message.trim() !== '') {
+        console.log("Adding caption");
+        try {
+          // Try different approaches to add caption
+          await page.evaluate((captionText) => {
+            // Try to find caption field using multiple approaches
+            const captionElements = [
+              ...document.querySelectorAll('[contenteditable="true"][role="textbox"]'),
+              ...document.querySelectorAll('[data-testid="media-caption"]'),
+              ...document.querySelectorAll('[placeholder*="caption" i]'),
+              ...document.querySelectorAll('[aria-label*="caption" i]')
+            ];
+            
+            for (const el of captionElements) {
+              if (el && el.isContentEditable) {
+                // Focus and clear
+                el.focus();
+                el.innerHTML = '';
+                
+                // Try multiple methods to insert text
+                try {
+                  // Method 1: execCommand
+                  document.execCommand('insertText', false, captionText);
+                } catch (e) {
+                  try {
+                    // Method 2: clipboard API
+                    el.textContent = captionText;
+                  } catch (e2) {
+                    // Method 3: direct innerHTML
+                    el.innerHTML = captionText;
+                  }
+                }
+                
+                return true;
+              }
+            }
+            return false;
+          }, message);
+          
+          // Allow time for caption to register
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (captionErr) {
+          console.log("Error adding caption:", captionErr.message);
+          // Continue anyway - caption is optional
+        }
+      }
+      
+      // Send file using multiple methods
+      console.log("Attempting to send file");
+      let sendAttempted = false;
+      
+      // Method 1: Try finding and clicking send button
+      try {
+        const sendButtonSelectors = [
+          'span[data-icon="send"]',
+          'button[aria-label="Send"]',
+          '[data-testid="send"]',
+          '[data-icon="send"]',
+          'div[role="button"][aria-label="Send"]'
+        ];
+        
+        for (const selector of sendButtonSelectors) {
+          try {
+            const sendButton = await page.waitForSelector(selector, { timeout: 5000 });
+            if (sendButton) {
+              await sendButton.click();
+              console.log(`Clicked send button using selector: ${selector}`);
+              sendAttempted = true;
+              break;
+            }
+          } catch (selectorErr) {
+            // Try next selector
+          }
+        }
+      } catch (sendBtnErr) {
+        console.log("Send button approach failed:", sendBtnErr.message);
+      }
+      
+      // Method 2: If button click failed, try keyboard shortcuts
+      if (!sendAttempted) {
+        console.log("Trying keyboard shortcut to send");
+        await page.keyboard.press('Enter');
+        sendAttempted = true;
+      }
+      
+      // Wait longer for send to complete
+      const sendWaitTime = Math.max(2000, Math.min(4000, fileSize / 80000 * 2000));
+      console.log(`Waiting ${sendWaitTime}ms for send to complete`);
+      await new Promise(resolve => setTimeout(resolve, sendWaitTime));
+      
+      // Check if sending was successful by looking for message in chat
+      let sendSuccessful = false;
+      try {
+        const successIndicators = [
+          'span[data-testid="msg-check"]',
+          'span[data-testid="msg-dblcheck"]',
+          '.message-out', // Common class for outgoing messages
+          '[data-testid="msg-container"]'
+        ];
+        
+        for (const indicator of successIndicators) {
+          try {
+            const messageElement = await page.$(indicator);
+            if (messageElement) {
+              console.log(`Found success indicator: ${indicator}`);
+              sendSuccessful = true;
+              break;
+            }
+          } catch (indicatorErr) {
+            // Try next indicator
+          }
+        }
+      } catch (checkErr) {
+        console.log("Error checking success indicators:", checkErr.message);
+      }
+      
+      // Return response based on send status
+      if (sendSuccessful) {
+        console.log("File sent successfully");
+        res.status(200).json({
+          success: true,
+          message: 'File sent successfully',
+          fileName: req.file.originalname
+        });
+      } else {
+        console.log("Could not confirm file was sent");
+        res.status(202).json({
+          success: false,
+          message: 'File upload attempted but could not confirm delivery',
+          fileName: req.file.originalname
+        });
       }
 
-      // Send the file
-      // Press Enter to send
-      await page.keyboard.press('Enter');
-
-      // Wait for send to complete - faster dynamic wait
-      const fileSize = req.file.size;
-      const sendWaitTime = Math.max(2000, Math.min(4000, fileSize / 100000 * 1000));
-      await new Promise(resolve => setTimeout(resolve, sendWaitTime));
-
-      // Immediately return success response
-      res.status(200).json({
-        success: true,
-        message: 'File sent successfully',
-        fileName: req.file.originalname
-      });
-
-      // Clean up file after response is sent
+      // Clean up file regardless of outcome
       setTimeout(() => {
         try {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
+            console.log("Temporary file deleted");
           }
         } catch (cleanupError) {
           console.error('File cleanup error:', cleanupError.message);
@@ -779,7 +967,7 @@ const sendFileWithMessage = async (req, res) => {
       }, 5000);
 
     } catch (err) {
-      console.error('File sending error:', err);
+      console.error('File sending error:', err.message);
 
       res.status(500).json({
         error: 'Failed to send file',
@@ -791,6 +979,7 @@ const sendFileWithMessage = async (req, res) => {
         setTimeout(() => {
           try {
             fs.unlinkSync(filePath);
+            console.log("Temporary file deleted after error");
           } catch (cleanupError) {
             console.error('File cleanup error:', cleanupError.message);
           }
@@ -799,4 +988,182 @@ const sendFileWithMessage = async (req, res) => {
     }
   });
 };
+
+
+
+
+// const sendFileWithMessage = async (req, res) => {
+//   // Use middleware to handle file upload
+//   uploadMiddleware(req, res, async (err) => {
+//     if (err) {
+//       return res.status(400).json({ error: 'File upload failed', details: err.message });
+//     }
+
+//     const { userId, phoneNumber, message } = req.body;
+
+//     // Log only essential data
+//     console.log('Processing file send request for:', phoneNumber);
+
+//     if (!req.file) {
+//       return res.status(400).json({ error: 'No file uploaded' });
+//     }
+
+//     if (!sessions[userId]) {
+//       // Clean up the uploaded file if session is not active
+//       fs.unlinkSync(req.file.path);
+//       return res.status(400).json({ error: 'Session not active' });
+//     }
+
+//     let filePath = null;
+
+//     try {
+//       const page = sessions[userId].page;
+
+//       // Ensure we have an absolute file path that exists
+//       filePath = path.resolve(req.file.path);
+
+//       // Verify file exists before attempting to upload
+//       if (!fs.existsSync(filePath)) {
+//         throw new Error(`File does not exist at path: ${filePath}`);
+//       }
+
+//       // FASTER APPROACH - Use direct navigation to chat instead of search
+//       // Format phone number correctly
+//       const formattedNumber = phoneNumber.startsWith('+')
+//         ? phoneNumber.replace(/\D/g, '')
+//         : phoneNumber.replace(/\D/g, '');
+
+//       // Direct navigation to the chat with this phone number
+//       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
+//       await page.goto(chatUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+//       // Wait for the chat to load
+//       // const chatLoadSelector = 'div[data-testid="conversation-panel-wrapper"]';
+//       // await page.waitForSelector(chatLoadSelector, { timeout: 20000 });
+
+//       // Brief pause to ensure everything is loaded
+//       await new Promise(resolve => setTimeout(resolve, 2000));
+
+//       // Open attachment menu
+//       const attachmentSelector = 'button[title="Attach"]';
+//       await page.waitForSelector(attachmentSelector, { timeout: 10000 });
+//       await page.click(attachmentSelector);
+
+//       // Wait for file input and upload file
+//       const fileInputSelector = 'input[type="file"]';
+//       await page.waitForSelector(fileInputSelector, { timeout: 10000 });
+//       const fileInput = await page.$(fileInputSelector);
+
+//       if (fileInput) {
+//         // Upload file
+//         await fileInput.uploadFile(filePath);
+
+//         // Dynamic wait based on file size - but faster overall
+//         const fileSize = req.file.size;
+//         const uploadWaitTime = Math.max(3000, Math.min(5000, fileSize / 50000 * 500));
+//         console.log("file uploading");
+
+//         await new Promise(resolve => setTimeout(resolve, uploadWaitTime));
+//         console.log("file uploaded");
+//       } else {
+//         console.log("file not uploaded");
+//         throw new Error('File upload input not found');
+//       }
+
+//       // Add message if provided
+//       if (message) {
+//         const messageSelector = 'div[contenteditable="true"][role="textbox"][aria-placeholder="Add a caption"]';
+//         await page.waitForSelector(messageSelector, { timeout: 10000 });
+//         await page.evaluate((selector, text) => {
+//           const el = document.querySelector(selector);
+//           if (el) {
+//             // Focus the element
+//             el.focus();
+
+//             // Clear existing content
+//             el.innerHTML = '';
+
+//             // Create a "paste" event with the message text
+//             const dataTransfer = new DataTransfer();
+//             dataTransfer.setData('text/plain', text);
+
+//             const pasteEvent = new ClipboardEvent('paste', {
+//               clipboardData: dataTransfer,
+//               bubbles: true,
+//               cancelable: true
+//             });
+
+//             // Dispatch the paste event
+//             el.dispatchEvent(pasteEvent);
+//           }
+//         }, messageSelector, message);
+//       }
+
+//       // Send the file
+//       // Press Enter to send
+//       try {
+//         const sendButtonSelector = 'span[data-icon="send"]';
+//         await page.waitForSelector(sendButtonSelector, { timeout: 5000 });
+//         await page.click(sendButtonSelector);
+//         console.log("Clicked send button");
+//       } catch (e) {
+//         console.log("Send button not found, trying Enter key");
+//         await page.keyboard.press('Enter');
+//       }
+
+//       try {
+//         const confirmSelector = 'div[role="button"][tabindex="0"]';
+//         await page.waitForSelector(confirmSelector, { timeout: 3000 });
+//         await page.click(confirmSelector);
+//         console.log("Clicked confirmation button");
+//       } catch (e) {
+//         console.log("No confirmation needed");
+//       }
+//       console.log("file is selected and uploaded the only thing is remaining to send it");
+
+
+//       // Wait for send to complete - faster dynamic wait
+//       const fileSize = req.file.size;
+//       const sendWaitTime = Math.max(2000, Math.min(4000, fileSize / 100000 * 1000));
+//       await new Promise(resolve => setTimeout(resolve, sendWaitTime));
+
+//       // Immediately return success response
+//       res.status(200).json({
+//         success: true,
+//         message: 'File sent successfully',
+//         fileName: req.file.originalname
+//       });
+
+//       // Clean up file after response is sent
+//       setTimeout(() => {
+//         try {
+//           if (fs.existsSync(filePath)) {
+//             fs.unlinkSync(filePath);
+//           }
+//         } catch (cleanupError) {
+//           console.error('File cleanup error:', cleanupError.message);
+//         }
+//       }, 5000);
+
+//     } catch (err) {
+//       console.error('File sending error:', err);
+
+//       res.status(500).json({
+//         error: 'Failed to send file',
+//         details: err.message
+//       });
+
+//       // Clean up file on error
+//       if (filePath && fs.existsSync(filePath)) {
+//         setTimeout(() => {
+//           try {
+//             fs.unlinkSync(filePath);
+//           } catch (cleanupError) {
+//             console.error('File cleanup error:', cleanupError.message);
+//           }
+//         }, 2000);
+//       }
+//     }
+//   });
+// };
 module.exports = { startSession, closeSession, sendMessage, sendFileWithMessage };

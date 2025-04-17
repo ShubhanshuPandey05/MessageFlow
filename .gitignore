@@ -2,6 +2,7 @@
 node_modules/
 dist/
 build/
+sessions/
 
 # Optional cache and logs
 *.log
