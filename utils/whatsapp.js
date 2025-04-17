@@ -32,7 +32,7 @@ const launchBrowser = async (userId) => {
       '--disable-blink-features=AutomationControlled'
     ],
     userDataDir: userSessionPath,
-    executablePath: executablePath()
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
   });
 
   const page = await browser.newPage();
