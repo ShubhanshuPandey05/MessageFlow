@@ -20,6 +20,28 @@ const launchBrowser = async (userId) => {
   console.log('Chrome executablePath:', executablePath());
   console.log('User session dir:', userSessionPath);
 
+  console.log("Checking chrome directories...");
+  exec('ls -la /opt/render/.cache/puppeteer/chrome/linux-134.0.6998.35/', (error, stdout, stderr) => {
+    console.log("Chrome directory contents:");
+    console.log(stdout);
+  });
+  
+  exec('ls -la /opt/render/.cache/puppeteer/chrome-headless-shell/linux-134.0.6998.35/', (error, stdout, stderr) => {
+    console.log("Chrome-headless-shell directory contents:");
+    console.log(stdout);
+  });
+
+
+  const possiblePaths = [
+    '/opt/render/.cache/puppeteer/chrome/linux-134.0.6998.35/chrome-linux64/chrome',
+    '/opt/render/.cache/puppeteer/chrome-headless-shell/linux-134.0.6998.35/chrome-headless-shell',
+    '/opt/render/.cache/puppeteer/chrome/linux-134.0.6998.35/chrome'
+  ];
+
+  for (const path of possiblePaths) {
+    console.log(`Checking if ${path} exists:`, fs.existsSync(path));
+  }
+
 
   const browser = await puppeteerx.launch({
     headless: true,
@@ -32,7 +54,7 @@ const launchBrowser = async (userId) => {
       '--disable-blink-features=AutomationControlled'
     ],
     userDataDir: userSessionPath,
-    executablePath: '/opt/render/.cache/puppeteer/chrome-headless-shell/linux-134.0.6998.35/chrome-headless-shell',
+    executablePath: '/opt/render/.cache/puppeteer/chrome/linux-134.0.6998.35/chrome-linux64/chrome',
   });
 
   const page = await browser.newPage();
