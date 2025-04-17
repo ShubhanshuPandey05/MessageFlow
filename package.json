@@ -6,8 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "postinstall": "node node_modules/puppeteer/install.mjs",
+    "postinstall": "echo 'Skipping Puppeteer download as we are using system Chromium'",
     "dev": "nodemon index.js"
+  },
+  "puppeteer": {
+    "skip_chromium_download": true
   },
   "keywords": [],
   "author": "",
