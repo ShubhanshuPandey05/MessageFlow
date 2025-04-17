@@ -32,7 +32,7 @@ const launchBrowser = async (userId) => {
       '--disable-blink-features=AutomationControlled'
     ],
     userDataDir: userSessionPath,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+    executablePath: '/opt/render/.cache/puppeteer/chrome-headless-shell/linux-134.0.6998.35/chrome-headless-shell',
   });
 
   const page = await browser.newPage();
