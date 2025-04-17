@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const qrcode = require('qrcode-terminal');
 const { executablePath } = puppeteer;
+const { exec } = require('child_process');
 
 // Add stealth plugin to bypass some detection mechanisms
 puppeteerx.use(StealthPlugin());
