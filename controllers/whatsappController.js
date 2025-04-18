@@ -92,17 +92,17 @@ const startSession = async (req, res) => {
       { phoneNumber, sessionPath: `sessions/${userId}` },
       { upsert: true, new: true }
     );
-    global.latestWhatsappScreenshot = screenshot
+    
 
-    const imgPath = './utils/screenshot.png';
-    const img = fs.readFileSync(imgPath);
-    res.writeHead(200, {
-      'Content-Type': 'image/jpeg',
-      'Content-Length': img.length
-    });
-    res.end(img);
+    // const imgPath = './utils/screenshot.png';
+    // const img = fs.readFileSync(imgPath);
+    // res.writeHead(200, {
+    //   'Content-Type': 'image/jpeg',
+    //   'Content-Length': img.length
+    // });
+    // res.end(img);
 
-    // res.status(200).json({ success: true, message: 'Session started', qrCodeUrl, screenshot: `data:image/png;base64,${global.latestWhatsappScreenshot}`  });
+    res.status(200).json({ success: true, message: 'Session started', qrCodeUrl });
     // res.set('Content-Type', 'image/png');
     // res.send(Buffer.from(global.latestWhatsappScreenshot, 'base64'));
   } catch (err) {
