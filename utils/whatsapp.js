@@ -28,6 +28,9 @@ const launchBrowser = async (userId) => {
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',  // Important for CI environments
+      '--disable-gpu',
+      '--disable-software-rasterizer',
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
       '--disable-blink-features=AutomationControlled'
@@ -68,8 +71,8 @@ const launchBrowser = async (userId) => {
           // If using a canvas, try to get data-ref
           dataRef = qrCodeElement.getAttribute('data-ref') ||
             qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
-            console.log(dataRef);
-            
+          console.log(dataRef);
+
 
           return {
             needsQRCode: true,
@@ -116,10 +119,10 @@ const launchBrowser = async (userId) => {
     } else if (loginStatus.isLoggedIn) {
       console.log('Already logged in');
     }
-    console.log("Hello here is you data",dataRef);
-    
+    console.log("Hello here is you data", dataRef);
 
-    return { browser, page, qrCodeUrl:dataRef };
+
+    return { browser, page, qrCodeUrl: dataRef };
 
   } catch (error) {
     console.error('Detailed Login Error:', error);
