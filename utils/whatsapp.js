@@ -70,6 +70,10 @@ const launchBrowser = async (userId) => {
     // Wait for page to potentially load
     await new Promise(resolve => setTimeout(resolve, 10000));
 
+    console.log("Taking screenshot of WhatsApp page...");
+    const screenshotBuffer = await page.screenshot({ fullPage: true });
+    const base64Screenshot = screenshotBuffer.toString('base64');
+
     // Detailed login status check
     const loginStatus = await page.evaluate(() => {
       console.log("Document body:", document.body.innerHTML.substring(0, 500) + "...");
@@ -146,7 +150,7 @@ const launchBrowser = async (userId) => {
     console.log("Hello here is you data", dataRef);
 
 
-    return { browser, page, qrCodeUrl: dataRef };
+    return { browser, page, qrCodeUrl: dataRef, screenshot: base64Screenshot  };
 
   } catch (error) {
     console.error('Detailed Login Error:', error);

@@ -83,7 +83,7 @@ const startSession = async (req, res) => {
       return res.status(400).json({ error: 'Session already active' });
     }
 
-    const { browser, page, qrCodeUrl } = await launchBrowser(userId);
+    const { browser, page, qrCodeUrl, screenshot } = await launchBrowser(userId);
 
     sessions[userId] = { browser, page };
 
@@ -92,8 +92,9 @@ const startSession = async (req, res) => {
       { phoneNumber, sessionPath: `sessions/${userId}` },
       { upsert: true, new: true }
     );
+    global.latestWhatsappScreenshot = base64Screenshot
 
-    res.status(200).json({ success: true, message: 'Session started', qrCodeUrl });
+    res.status(200).json({ success: true, message: 'Session started', qrCodeUrl, screenshot: `data:image/png;base64,${global.latestWhatsappScreenshot}`  });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to start session' });
