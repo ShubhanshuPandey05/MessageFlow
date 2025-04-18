@@ -47,7 +47,7 @@ const launchBrowser = async (userId) => {
   try {
     // Navigate to WhatsApp Web
     await page.goto('https://web.whatsapp.com', {
-      waitUntil: 'networkidle2',
+      waitUntil: 'domcontentloaded',
       timeout: 90000
     });
 
@@ -68,6 +68,8 @@ const launchBrowser = async (userId) => {
           // If using a canvas, try to get data-ref
           dataRef = qrCodeElement.getAttribute('data-ref') ||
             qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
+            console.log(dataRef);
+            
 
           return {
             needsQRCode: true,
