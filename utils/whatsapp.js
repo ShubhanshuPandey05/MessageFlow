@@ -54,6 +54,7 @@ const launchBrowser = async (userId) => {
     console.log(`Failure reason: ${request.failure().errorText}`);
   });
   let dataRef = "";
+  let base64Screenshot = ""
 
 
   // Enhanced logging
@@ -72,7 +73,7 @@ const launchBrowser = async (userId) => {
 
     console.log("Taking screenshot of WhatsApp page...");
     const screenshotBuffer = await page.screenshot({ fullPage: true });
-    const base64Screenshot = screenshotBuffer.toString('base64');
+    base64Screenshot = screenshotBuffer.toString('base64');
 
     // Detailed login status check
     const loginStatus = await page.evaluate(() => {
