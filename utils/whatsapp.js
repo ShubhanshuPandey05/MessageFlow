@@ -5,9 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const qrcode = require('qrcode-terminal');
 const { executablePath } = puppeteer;
-
-// Add stealth plugin to bypass some detection mechanisms
-puppeteerx.use(StealthPlugin());
+const stealthPlugin = StealthPlugin();
+stealthPlugin.enabledEvasions.delete('chrome.runtime');
+stealthPlugin.enabledEvasions.delete('iframe.contentWindow');
+puppeteerx.use(stealthPlugin);
 
 const SESSION_PATH = path.join(__dirname, '../sessions');
 
@@ -40,6 +41,18 @@ const launchBrowser = async (userId) => {
   });
 
   const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+
+  await page.setRequestInterception(true);
+  page.on('request', request => {
+    console.log(`Request: ${request.url().substring(0, 100)}`);
+    request.continue();
+  });
+
+  page.on('requestfailed', request => {
+    console.log(`Failed request: ${request.url().substring(0, 100)}`);
+    console.log(`Failure reason: ${request.failure().errorText}`);
+  });
   let dataRef = "";
 
 
@@ -50,8 +63,8 @@ const launchBrowser = async (userId) => {
   try {
     // Navigate to WhatsApp Web
     await page.goto('https://web.whatsapp.com', {
-      waitUntil: 'domcontentloaded',
-      timeout: 90000
+      waitUntil: 'networkidle2',
+      timeout: 120000
     });
 
     // Wait for page to potentially load
@@ -59,32 +72,34 @@ const launchBrowser = async (userId) => {
 
     // Detailed login status check
     const loginStatus = await page.evaluate(() => {
+      console.log("Document body:", document.body.innerHTML.substring(0, 500) + "...");
       // Try multiple selectors to find QR code
       const qrCodeSelectors = [
         '[data-testid="qrcode"]',
         'canvas[aria-label="Scan this QR code to link a device!"]',
-        'div[data-ref]'
+        'div[data-ref]',
+        '.landing-wrapper', // Add parent containers too
+        '_2UwZ_' // Class that might be present on QR container
       ];
       for (let selector of qrCodeSelectors) {
-        const qrCodeElement = document.querySelector(selector);
-        if (qrCodeElement) {
-          // If using a canvas, try to get data-ref
-          dataRef = qrCodeElement.getAttribute('data-ref') ||
-            qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
-          console.log(dataRef);
-
-
-          return {
-            needsQRCode: true,
-            qrCodeFound: true,
-            dataRef: dataRef
-          };
+        try {
+          const qrCodeElement = document.querySelector(selector);
+          if (qrCodeElement) {
+            console.log("Found QR element with selector:", selector);
+            const dataRef = qrCodeElement.getAttribute('data-ref') ||
+              qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
+            return { needsQRCode: true, qrCodeFound: true, dataRef: dataRef };
+          }
+        } catch (e) {
+          console.log("Error checking selector:", selector, e);
         }
       }
 
       // Check for chat list or login indicators
+      console.log("QR elements not found, checking login status");
       const chatList = document.querySelector('[data-testid="chat-list"]');
       const loginPage = document.querySelector('.landing-title');
+      const anyContent = document.querySelector('body').textContent.length > 100;
 
       return {
         needsQRCode: false,
