@@ -72,8 +72,13 @@ const launchBrowser = async (userId) => {
     await new Promise(resolve => setTimeout(resolve, 10000));
 
     console.log("Taking screenshot of WhatsApp page...");
-    const screenshotBuffer = await page.screenshot({ fullPage: true });
+    const ScreenshotPath = path.join(__dirname, 'screenshot.png');
+    const screenshotBuffer = await page.screenshot({ fullPage: true, path: ScreenshotPath });
+    console.log(`screenshot saved to: ${ScreenshotPath}`);
     base64Screenshot = screenshotBuffer.toString('base64');
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
 
     // Detailed login status check
     const loginStatus = await page.evaluate(() => {

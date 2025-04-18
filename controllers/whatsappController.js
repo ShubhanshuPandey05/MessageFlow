@@ -92,9 +92,19 @@ const startSession = async (req, res) => {
       { phoneNumber, sessionPath: `sessions/${userId}` },
       { upsert: true, new: true }
     );
-    global.latestWhatsappScreenshot = base64Screenshot
+    global.latestWhatsappScreenshot = screenshot
 
-    res.status(200).json({ success: true, message: 'Session started', qrCodeUrl, screenshot: `data:image/png;base64,${global.latestWhatsappScreenshot}`  });
+    const imgPath = './utils/screenshot.png';
+    const img = fs.readFileSync(imgPath);
+    res.writeHead(200, {
+      'Content-Type': 'image/jpeg',
+      'Content-Length': img.length
+    });
+    res.end(img);
+
+    // res.status(200).json({ success: true, message: 'Session started', qrCodeUrl, screenshot: `data:image/png;base64,${global.latestWhatsappScreenshot}`  });
+    // res.set('Content-Type', 'image/png');
+    // res.send(Buffer.from(global.latestWhatsappScreenshot, 'base64'));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to start session' });
@@ -691,10 +701,10 @@ const sendFileWithMessage = async (req, res) => {
       // Wait longer to ensure chat is fully loaded
       console.log("Waiting for chat to stabilize");
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Ensure the page is focused and active
       await page.bringToFront();
-      
+
       // Clear any potential notifications or popups
       try {
         const dismissSelectors = [
@@ -702,7 +712,7 @@ const sendFileWithMessage = async (req, res) => {
           '[data-testid="popup-controls-ok"]',
           '[data-testid="popup-controls-cancel"]'
         ];
-        
+
         for (const selector of dismissSelectors) {
           const dismissBtn = await page.$(selector);
           if (dismissBtn) {
@@ -714,17 +724,17 @@ const sendFileWithMessage = async (req, res) => {
       } catch (popupErr) {
         // Ignore errors from popup clearing
       }
-      
+
       // Open attachment menu with better error handling
       console.log("Attempting to open attachment menu");
       const attachmentSelectors = [
-        'button[aria-label="Attach"]', 
-        'button[title="Attach"]', 
+        'button[aria-label="Attach"]',
+        'button[title="Attach"]',
         'span[data-icon="attach-menu-plus"]',
         'div[title="Attach"]',
         '[data-testid="attach"]'
       ];
-      
+
       let attachButtonFound = false;
       for (const selector of attachmentSelectors) {
         try {
@@ -739,15 +749,15 @@ const sendFileWithMessage = async (req, res) => {
           console.log(`Selector ${selector} not found or not clickable`);
         }
       }
-      
+
       if (!attachButtonFound) {
         throw new Error("Could not find attachment button");
       }
-      
+
       // Wait for attachment menu to appear
       console.log("Waiting for attachment menu");
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       // Force file input to be visible and interactable
       await page.evaluate(() => {
         const inputs = document.querySelectorAll('input[type="file"]');
@@ -761,12 +771,12 @@ const sendFileWithMessage = async (req, res) => {
           input.style.zIndex = '9999';
         }
       });
-      
+
       // Find and use file input with expanded timeout
       console.log("Looking for file input");
       const fileInputSelector = 'input[type="file"]';
       await page.waitForSelector(fileInputSelector, { visible: true, timeout: 20000 });
-      
+
       // Upload file with extra precautions
       console.log("Uploading file...");
       await page.evaluate(() => {
@@ -775,21 +785,21 @@ const sendFileWithMessage = async (req, res) => {
           input.value = '';
         });
       });
-      
+
       // Use elementHandle for more reliable upload
       const fileInput = await page.$(fileInputSelector);
       if (!fileInput) {
         throw new Error("File input element not found");
       }
-      
+
       await fileInput.uploadFile(filePath);
-      
+
       // Wait longer for file processing based on file size
       const fileSize = req.file.size;
       const uploadWaitTime = Math.max(2000, Math.min(5000, fileSize / 30000 * 1000));
       console.log(`Waiting ${uploadWaitTime}ms for file processing`);
       await new Promise(resolve => setTimeout(resolve, uploadWaitTime));
-      
+
       // Check for errors immediately after upload
       try {
         const errorSelectors = [
@@ -797,16 +807,16 @@ const sendFileWithMessage = async (req, res) => {
           '[data-testid="popup-contents"] [role="heading"]',
           '[data-testid="alert"] span'
         ];
-        
+
         for (const selector of errorSelectors) {
           const errorElement = await page.$(selector);
           if (errorElement) {
             const errorText = await page.evaluate(el => el.textContent, errorElement);
             if (errorText && (
-                errorText.includes("not supported") || 
-                errorText.includes("error") || 
-                errorText.includes("fail") ||
-                errorText.includes("unable")
+              errorText.includes("not supported") ||
+              errorText.includes("error") ||
+              errorText.includes("fail") ||
+              errorText.includes("unable")
             )) {
               throw new Error(`Upload error: ${errorText}`);
             }
@@ -818,9 +828,9 @@ const sendFileWithMessage = async (req, res) => {
         }
         // Otherwise continue - no error found
       }
-      
+
       console.log("File appears to be processed successfully");
-      
+
       // Add caption if provided
       if (message && message.trim() !== '') {
         console.log("Adding caption");
@@ -834,13 +844,13 @@ const sendFileWithMessage = async (req, res) => {
               ...document.querySelectorAll('[placeholder*="caption" i]'),
               ...document.querySelectorAll('[aria-label*="caption" i]')
             ];
-            
+
             for (const el of captionElements) {
               if (el && el.isContentEditable) {
                 // Focus and clear
                 el.focus();
                 el.innerHTML = '';
-                
+
                 // Try multiple methods to insert text
                 try {
                   // Method 1: execCommand
@@ -854,13 +864,13 @@ const sendFileWithMessage = async (req, res) => {
                     el.innerHTML = captionText;
                   }
                 }
-                
+
                 return true;
               }
             }
             return false;
           }, message);
-          
+
           // Allow time for caption to register
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (captionErr) {
@@ -868,11 +878,11 @@ const sendFileWithMessage = async (req, res) => {
           // Continue anyway - caption is optional
         }
       }
-      
+
       // Send file using multiple methods
       console.log("Attempting to send file");
       let sendAttempted = false;
-      
+
       // Method 1: Try finding and clicking send button
       try {
         const sendButtonSelectors = [
@@ -882,7 +892,7 @@ const sendFileWithMessage = async (req, res) => {
           '[data-icon="send"]',
           'div[role="button"][aria-label="Send"]'
         ];
-        
+
         for (const selector of sendButtonSelectors) {
           try {
             const sendButton = await page.waitForSelector(selector, { timeout: 5000 });
@@ -899,19 +909,19 @@ const sendFileWithMessage = async (req, res) => {
       } catch (sendBtnErr) {
         console.log("Send button approach failed:", sendBtnErr.message);
       }
-      
+
       // Method 2: If button click failed, try keyboard shortcuts
       if (!sendAttempted) {
         console.log("Trying keyboard shortcut to send");
         await page.keyboard.press('Enter');
         sendAttempted = true;
       }
-      
+
       // Wait longer for send to complete
       const sendWaitTime = Math.max(2000, Math.min(4000, fileSize / 80000 * 2000));
       console.log(`Waiting ${sendWaitTime}ms for send to complete`);
       await new Promise(resolve => setTimeout(resolve, sendWaitTime));
-      
+
       // Check if sending was successful by looking for message in chat
       let sendSuccessful = false;
       try {
@@ -921,7 +931,7 @@ const sendFileWithMessage = async (req, res) => {
           '.message-out', // Common class for outgoing messages
           '[data-testid="msg-container"]'
         ];
-        
+
         for (const indicator of successIndicators) {
           try {
             const messageElement = await page.$(indicator);
@@ -937,7 +947,7 @@ const sendFileWithMessage = async (req, res) => {
       } catch (checkErr) {
         console.log("Error checking success indicators:", checkErr.message);
       }
-      
+
       // Return response based on send status
       if (sendSuccessful) {
         console.log("File sent successfully");
