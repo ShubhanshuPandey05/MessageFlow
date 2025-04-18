@@ -1,5 +1,5 @@
 const puppeteerx = require('puppeteer-extra');
-const puppeteer = require('puppeteer'); 
+const puppeteer = require('puppeteer');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const fs = require('fs');
 const path = require('path');
@@ -37,10 +37,12 @@ const launchBrowser = async (userId) => {
   });
 
   const page = await browser.newPage();
+  let dataRef = "";
+
 
   // Enhanced logging
   page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-  page.on('pageerror', err => console.error('PAGE ERROR:', err));
+  page.on('pageerror', err => console.log('PAGE ERROR:', err));
 
   try {
     // Navigate to WhatsApp Web
@@ -60,12 +62,11 @@ const launchBrowser = async (userId) => {
         'canvas[aria-label="Scan this QR code to link a device!"]',
         'div[data-ref]'
       ];
-
       for (let selector of qrCodeSelectors) {
         const qrCodeElement = document.querySelector(selector);
         if (qrCodeElement) {
           // If using a canvas, try to get data-ref
-          const dataRef = qrCodeElement.getAttribute('data-ref') ||
+          dataRef = qrCodeElement.getAttribute('data-ref') ||
             qrCodeElement.closest('[data-ref]')?.getAttribute('data-ref');
 
           return {
@@ -97,6 +98,7 @@ const launchBrowser = async (userId) => {
       if (loginStatus.dataRef) {
         console.log('Scan this QR Code with WhatsApp Mobile:');
         qrcode.generate(loginStatus.dataRef, { small: true });
+        dataRef = loginStatus.dataRef
       }
 
       // Wait indefinitely for login
@@ -112,8 +114,10 @@ const launchBrowser = async (userId) => {
     } else if (loginStatus.isLoggedIn) {
       console.log('Already logged in');
     }
+    console.log(dataRef);
+    
 
-    return { browser, page };
+    return { browser, page, qrCodeUrl:dataRef };
 
   } catch (error) {
     console.error('Detailed Login Error:', error);

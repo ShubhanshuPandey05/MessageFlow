@@ -83,7 +83,7 @@ const startSession = async (req, res) => {
       return res.status(400).json({ error: 'Session already active' });
     }
 
-    const { browser, page } = await launchBrowser(userId);
+    const { browser, page, qrCodeUrl } = await launchBrowser(userId);
 
     sessions[userId] = { browser, page };
 
@@ -93,7 +93,7 @@ const startSession = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    res.status(200).json({ success: true, message: 'Session started' });
+    res.status(200).json({ success: true, message: 'Session started', qrCodeUrl });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to start session' });
