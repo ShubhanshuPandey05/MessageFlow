@@ -114,7 +114,7 @@ const launchBrowser = async (userId) => {
     } else if (loginStatus.isLoggedIn) {
       console.log('Already logged in');
     }
-    console.log(dataRef);
+    console.log("Hello here is you data",dataRef);
     
 
     return { browser, page, qrCodeUrl:dataRef };
