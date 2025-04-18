@@ -63,23 +63,32 @@ const launchBrowser = async (userId) => {
   try {
     // Navigate to WhatsApp Web
     await page.goto('https://web.whatsapp.com', {
-      waitUntil: 'networkidle2',
+      waitUntil: 'networkidle0',
       timeout: 120000
     });
 
     // Wait for page to potentially load
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
 
     // Detailed login status check
     const loginStatus = await page.evaluate(() => {
       console.log("Document body:", document.body.innerHTML.substring(0, 500) + "...");
+      const splashScreen = document.querySelector('#app > div._aiwl'); 
+      const loadingIndicator = document.querySelector('.landing-title');
       // Try multiple selectors to find QR code
       const qrCodeSelectors = [
         '[data-testid="qrcode"]',
         'canvas[aria-label="Scan this QR code to link a device!"]',
         'div[data-ref]',
         '.landing-wrapper', // Add parent containers too
-        '_2UwZ_' // Class that might be present on QR container
+        '_2UwZ_', // Class that might be present on QR container
+        'canvas[aria-label*="Scan"]',
+        'div[data-ref]',
+        'div[data-testid="qrcode"]',
+        // WhatsApp sometimes uses these class names
+        '._2d4l0', 
+        '._19vUU',
+        '.landing-wrapper canvas'
       ];
       for (let selector of qrCodeSelectors) {
         try {
