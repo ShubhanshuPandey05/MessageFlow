@@ -24,7 +24,7 @@ const launchBrowser = async (userId) => {
 
 
   const browser = await puppeteerx.launch({
-    headless: false,
+    headless: true,
     defaultViewport: null,
     args: [
       '--no-sandbox',
