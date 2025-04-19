@@ -269,7 +269,7 @@ const sendMessage = async (req, res) => {
         message: 'Message sent successfully'
       });
     } else {
-      console.error('Message sending error:', err);
+      console.error('Message sending error:');
       const imgPath = './controllers/screenshot1.png';
       const img = fs.readFileSync(imgPath);
       res.writeHead(200, {
