@@ -44,10 +44,10 @@ const launchBrowser = async (userId) => {
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
   await page.setRequestInterception(true);
-  // page.on('request', request => {
-  //   console.log(`Request: ${request.url().substring(0, 100)}`);
-  //   request.continue();
-  // });
+  page.on('request', request => {
+    console.log(`Request: ${request.url().substring(0, 100)}`);
+    request.continue();
+  });
 
   page.on('requestfailed', request => {
     console.log(`Failed request: ${request.url().substring(0, 100)}`);
