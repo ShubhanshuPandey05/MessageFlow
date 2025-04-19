@@ -107,6 +107,13 @@ const startSession = async (req, res) => {
     // res.send(Buffer.from(global.latestWhatsappScreenshot, 'base64'));
   } catch (err) {
     console.error(err);
+    const imgPath = './utils/screenshot.png';
+    const img = fs.readFileSync(imgPath);
+    res.writeHead(200, {
+      'Content-Type': 'image/jpeg',
+      'Content-Length': img.length
+    });
+    res.end(img);
     res.status(500).json({ error: 'Failed to start session' });
   }
 };
