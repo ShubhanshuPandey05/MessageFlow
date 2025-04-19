@@ -243,7 +243,7 @@ const sendMessage = async (req, res) => {
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
       await page.goto(chatUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, 60000));
 
 
       console.log("page lodded succsesfully");
@@ -270,7 +270,7 @@ const sendMessage = async (req, res) => {
       });
     } else {
       console.error('Message sending error:');
-      const imgPath = './controllers/screenshot1.png';
+      const imgPath = './controllers/screenshot.png';
       const img = fs.readFileSync(imgPath);
       res.writeHead(200, {
         'Content-Type': 'image/jpeg',
@@ -280,7 +280,7 @@ const sendMessage = async (req, res) => {
     }
   } catch (err) {
     console.error('Message sending error:', err);
-    const imgPath = './controllers/screenshot.png';
+    const imgPath = './controllers/screenshot1.png';
     const img = fs.readFileSync(imgPath);
     res.writeHead(200, {
       'Content-Type': 'image/jpeg',
