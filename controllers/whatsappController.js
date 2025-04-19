@@ -1,5 +1,6 @@
 const { launchBrowser } = require('../utils/whatsapp');
 const User = require('../models/User');
+const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 
 const sessions = {};
 
@@ -85,6 +86,9 @@ const startSession = async (req, res) => {
 
     const { browser, page, qrCodeUrl, screenshot } = await launchBrowser(userId);
 
+
+
+    // await recorder.start(videoPath);
     sessions[userId] = { browser, page };
 
     const user = await User.findOneAndUpdate(
@@ -202,6 +206,10 @@ const sendMessage = async (req, res) => {
 
   try {
     const page = sessions[userId].page;
+
+    const recorder = new PuppeteerScreenRecorder(page);
+    const videoPath = './controllers/recording.mp4';
+    await recorder.start(videoPath);
     // const formattedNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     // console.log(`Attempting to send message to: ${formattedNumber}`);
 
@@ -229,6 +237,7 @@ const sendMessage = async (req, res) => {
       // }
       // console.log("Contact selected");
 
+
       const formattedNumber = phoneNumber.startsWith('+')
         ? phoneNumber.replace(/\D/g, '')
         : phoneNumber.replace(/\D/g, '');
@@ -241,12 +250,14 @@ const sendMessage = async (req, res) => {
       console.log(ScreenshotPath1);
 
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
-      await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 120000 });
+      await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 240000 });
+
 
       await new Promise(resolve => setTimeout(resolve, 60000));
 
 
       console.log("page lodded succsesfully");
+      await recorder.stop(videoPath);
 
       const ScreenshotPath = path.join(__dirname, 'screenshot.png');
       console.log(ScreenshotPath);
@@ -261,6 +272,19 @@ const sendMessage = async (req, res) => {
     } catch (err) {
       errorMessage = err.message;
       console.error("Process failed:", errorMessage);
+      await recorder.stop(); // Ensure recorder is stopped on error
+
+      if (fs.existsSync(videoPath)) {
+        const video = fs.readFileSync(videoPath);
+        res.writeHead(200, {
+          'Content-Type': 'video/mp4',
+          'Content-Length': video.length,
+          'Content-Disposition': 'attachment; filename="failure-recording.mp4"'
+        });
+        return res.end(video);
+      } else {
+        return res.status(500).json({ error: "Failed and no video found." });
+      }
     }
 
     if (success) {
