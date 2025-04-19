@@ -241,7 +241,8 @@ const sendMessage = async (req, res) => {
 
       const ScreenshotPath = path.join(__dirname, 'screenshot.png');
       await page.screenshot({ fullPage: true, path: ScreenshotPath });
-      // console.log();
+      console.log(ScreenshotPath);
+      console.log(ScreenshotPath1);
 
 
       // Step 5: Send the message
