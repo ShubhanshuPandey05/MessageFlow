@@ -114,7 +114,7 @@ const startSession = async (req, res) => {
       'Content-Length': img.length
     });
     res.end(img);
-    res.status(500).json({ error: 'Failed to start session' });
+    // res.status(500).json({ error: 'Failed to start session' });
   }
 };
 
