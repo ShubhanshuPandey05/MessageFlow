@@ -207,10 +207,10 @@ const sendMessage = async (req, res) => {
   try {
     const page = sessions[userId].page;
 
-    const recorder = new PuppeteerScreenRecorder(page);
-    const videoPath = './controllers/recording.mp4';
-    await recorder.start(videoPath);
-    // const formattedNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+    // const recorder = new PuppeteerScreenRecorder(page);
+    // const videoPath = './controllers/recording.mp4';
+    // await recorder.start(videoPath);
+    // // const formattedNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     // console.log(`Attempting to send message to: ${formattedNumber}`);
 
     // Attempt to navigate to chat and send message
@@ -250,10 +250,10 @@ const sendMessage = async (req, res) => {
       console.log(ScreenshotPath1);
 
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
-      await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 240000 });
+      await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 30000 });
 
 
-      await new Promise(resolve => setTimeout(resolve, 60000));
+      // await new Promise(resolve => setTimeout(resolve, 60000));
 
 
       console.log("page lodded succsesfully");
@@ -272,19 +272,19 @@ const sendMessage = async (req, res) => {
     } catch (err) {
       errorMessage = err.message;
       console.error("Process failed:", errorMessage);
-      await recorder.stop(); // Ensure recorder is stopped on error
+      // await recorder.stop(); // Ensure recorder is stopped on error
 
-      if (fs.existsSync(videoPath)) {
-        const video = fs.readFileSync(videoPath);
-        res.writeHead(200, {
-          'Content-Type': 'video/mp4',
-          'Content-Length': video.length,
-          'Content-Disposition': 'attachment; filename="failure-recording.mp4"'
-        });
-        return res.end(video);
-      } else {
-        return res.status(500).json({ error: "Failed and no video found." });
-      }
+      // if (fs.existsSync(videoPath)) {
+      //   const video = fs.readFileSync(videoPath);
+      //   res.writeHead(200, {
+      //     'Content-Type': 'video/mp4',
+      //     'Content-Length': video.length,
+      //     'Content-Disposition': 'attachment; filename="failure-recording.mp4"'
+      //   });
+      //   return res.end(video);
+      // } else {
+      //   return res.status(500).json({ error: "Failed and no video found." });
+      // }
     }
 
     if (success) {
@@ -1052,6 +1052,24 @@ const sendFileWithMessage = async (req, res) => {
 
 
 
+const clickSs = async (req, res) => {
+  const { userId } = req.body;
+  const page = sessions[userId].page;
+  const ssPath = path.join(__dirname, `ss${userId}.png`)
+  await page.screenshot({ fullPage: true, path: ssPath });
+
+  const img = fs.readFileSync(ssPath);
+  res.writeHead(200, {
+    'Content-Type': 'image/jpeg',
+    'Content-Length': img.length
+  });
+  res.end(img);
+}
+
+
+
+
+
 
 // const sendFileWithMessage = async (req, res) => {
 //   // Use middleware to handle file upload
@@ -1227,4 +1245,4 @@ const sendFileWithMessage = async (req, res) => {
 //     }
 //   });
 // };
-module.exports = { startSession, closeSession, sendMessage, sendFileWithMessage };
+module.exports = { startSession, closeSession, sendMessage, sendFileWithMessage, clickSs };
