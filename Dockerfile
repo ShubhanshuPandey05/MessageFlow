@@ -59,6 +59,8 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 # Install app dependencies
 RUN npm install
 
+RUN npm install puppeteer-screen-recorder --force
+
 # Copy app source
 COPY . .
 
