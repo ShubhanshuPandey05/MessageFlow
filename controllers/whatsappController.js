@@ -92,7 +92,7 @@ const startSession = async (req, res) => {
       { phoneNumber, sessionPath: `sessions/${userId}` },
       { upsert: true, new: true }
     );
-    
+
 
     // const imgPath = './utils/screenshot.png';
     // const img = fs.readFileSync(imgPath);
@@ -232,7 +232,15 @@ const sendMessage = async (req, res) => {
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
       await page.goto(chatUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
+
       console.log("page lodded succsesfully");
+
+      const ScreenshotPath = path.join(__dirname, 'screenshot.png');
+      await page.screenshot({ fullPage: true, path: ScreenshotPath });
+      console.log();
+
 
       // Step 5: Send the message
       await sendMessageToChat(page, message);
@@ -257,10 +265,13 @@ const sendMessage = async (req, res) => {
     }
   } catch (err) {
     console.error('Message sending error:', err);
-    return res.status(500).json({
-      error: 'Failed to send message',
-      details: err.message
+    const imgPath = './controllers/screenshot.png';
+    const img = fs.readFileSync(imgPath);
+    res.writeHead(200, {
+      'Content-Type': 'image/jpeg',
+      'Content-Length': img.length
     });
+    res.end(img);
   }
 };
 
