@@ -230,7 +230,9 @@ const sendMessage = async (req, res) => {
       console.log("Starting to navigate to the page");
 
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
-      await page.goto(chatUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const ScreenshotPath1 = path.join(__dirname, 'screenshot1.png');
+      await page.screenshot({ fullPage: true, path: ScreenshotPath1 });
+      await page.goto(chatUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
       await new Promise(resolve => setTimeout(resolve, 10000));
 
@@ -239,7 +241,7 @@ const sendMessage = async (req, res) => {
 
       const ScreenshotPath = path.join(__dirname, 'screenshot.png');
       await page.screenshot({ fullPage: true, path: ScreenshotPath });
-      console.log();
+      // console.log();
 
 
       // Step 5: Send the message
@@ -258,10 +260,14 @@ const sendMessage = async (req, res) => {
         message: 'Message sent successfully'
       });
     } else {
-      return res.status(400).json({
-        success: false,
-        message: `Failed to send message: ${errorMessage}`
+      console.error('Message sending error:', err);
+      const imgPath = './controllers/screenshot1.png';
+      const img = fs.readFileSync(imgPath);
+      res.writeHead(200, {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': img.length
       });
+      res.end(img);
     }
   } catch (err) {
     console.error('Message sending error:', err);
