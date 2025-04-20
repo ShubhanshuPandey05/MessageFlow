@@ -12,6 +12,12 @@ app.use(cors());
 
 connectDB();
 
+
+app.get('/api/ping',(req,res)=>{
+    console.log("yes your decentralized resource sharing app is working perfectly")
+    res.status(200).json({message:'pong'})
+})
+
 app.use('/api/whatsapp', whatsappRoutes);
 
 const PORT = process.env.PORT || 5000;
