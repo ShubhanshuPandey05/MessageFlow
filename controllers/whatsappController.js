@@ -1,6 +1,6 @@
 const { launchBrowser } = require('../utils/whatsapp');
 const User = require('../models/User');
-const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
+// const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 
 const sessions = {};
 
