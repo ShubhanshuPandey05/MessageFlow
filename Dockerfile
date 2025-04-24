@@ -10,14 +10,21 @@ COPY package*.json ./
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
+# Fix permissions
+USER root
+RUN chown -R pptruser:pptruser /app
+
+# Switch back to pptruser
+USER pptruser
+
 # Install app dependencies
 RUN npm install
 
 # Copy app source
-COPY . .
+COPY --chown=pptruser:pptruser . .
 
 # Expose port
 EXPOSE 5000
 
 # Start the application
-CMD ["node", "index.js"]    
+CMD ["node", "index.js"]
