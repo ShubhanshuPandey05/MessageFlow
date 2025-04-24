@@ -1,17 +1,11 @@
 FROM ghcr.io/puppeteer/puppeteer:24.4.0
 
-
-
-ENV \
-    # Configure default locale (important for chrome-headless-shell).
-    LANG=en_US.UTF-8 \
-    # UID of the non-root user 'pptruser'
-    PPTRUSER_UID=10042
-
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros \
-    fonts-kacst fonts-freefont-ttf dbus dbus-x11
+RUN apt-get update && \
+    apt-get install -y wget gnupg && \
+    apt-get install -y fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+        libgtk2.0-0 libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1 libasound2 && \
+    apt-get install -y chromium && \
+    apt-get clean
 
 # Create app directory
 WORKDIR /app
@@ -26,10 +20,6 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 # Fix permissions
 USER root
 RUN chown -R pptruser:pptruser /app
-
-
-RUN PUPPETEER_CACHE_DIR=/home/pptruser/.cache/puppeteer \
-  npx puppeteer browsers install chrome --install-deps
 
 # Switch back to pptruser
 USER pptruser
