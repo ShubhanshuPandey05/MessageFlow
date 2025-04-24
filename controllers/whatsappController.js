@@ -207,12 +207,6 @@ const sendMessage = async (req, res) => {
   try {
     const page = sessions[userId].page;
 
-    // const recorder = new PuppeteerScreenRecorder(page);
-    // const videoPath = './controllers/recording.mp4';
-    // await recorder.start(videoPath);
-    // // const formattedNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
-    // console.log(`Attempting to send message to: ${formattedNumber}`);
-
     // Attempt to navigate to chat and send message
     let success = false;
     let errorMessage = '';
@@ -245,9 +239,9 @@ const sendMessage = async (req, res) => {
       // Direct navigation to the chat with this phone number
       console.log("Starting to navigate to the page");
 
-      const ScreenshotPath1 = path.join(__dirname, 'screenshot1.png');
-      await page.screenshot({ fullPage: true, path: ScreenshotPath1 });
-      console.log(ScreenshotPath1);
+      // const ScreenshotPath1 = path.join(__dirname, 'screenshot1.png');
+      // await page.screenshot({ fullPage: true, path: ScreenshotPath1 });
+      // console.log(ScreenshotPath1);
 
       const chatUrl = `https://web.whatsapp.com/send?phone=${formattedNumber}`;
       await page.goto(chatUrl, { waitUntil: 'networkidle0', timeout: 30000 });
@@ -257,11 +251,10 @@ const sendMessage = async (req, res) => {
 
 
       console.log("page lodded succsesfully");
-      await recorder.stop(videoPath);
 
-      const ScreenshotPath = path.join(__dirname, 'screenshot.png');
-      console.log(ScreenshotPath);
-      await page.screenshot({ fullPage: true, path: ScreenshotPath });
+      // const ScreenshotPath = path.join(__dirname, 'screenshot.png');
+      // console.log(ScreenshotPath);
+      // await page.screenshot({ fullPage: true, path: ScreenshotPath });
 
 
       // Step 5: Send the message
@@ -294,23 +287,23 @@ const sendMessage = async (req, res) => {
       });
     } else {
       console.error('Message sending error:');
-      const imgPath = './controllers/screenshot.png';
-      const img = fs.readFileSync(imgPath);
-      res.writeHead(200, {
-        'Content-Type': 'image/jpeg',
-        'Content-Length': img.length
-      });
-      res.end(img);
+      // const imgPath = './controllers/screenshot.png';
+      // const img = fs.readFileSync(imgPath);
+      // res.writeHead(200, {
+      //   'Content-Type': 'image/jpeg',
+      //   'Content-Length': img.length
+      // });
+      // res.end(img);
     }
   } catch (err) {
     console.error('Message sending error:', err);
-    const imgPath = './controllers/screenshot1.png';
-    const img = fs.readFileSync(imgPath);
-    res.writeHead(200, {
-      'Content-Type': 'image/jpeg',
-      'Content-Length': img.length
-    });
-    res.end(img);
+    // const imgPath = './controllers/screenshot1.png';
+    // const img = fs.readFileSync(imgPath);
+    // res.writeHead(200, {
+    //   'Content-Type': 'image/jpeg',
+    //   'Content-Length': img.length
+    // });
+    // res.end(img);
   }
 };
 
